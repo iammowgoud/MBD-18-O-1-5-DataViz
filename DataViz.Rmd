@@ -1,0 +1,491 @@
+---
+output:
+  html_document:
+    css: style.css
+---
+
+
+# Formula E in numbers <img class="inline" src="formula.png" />
+
+```{r setup, echo=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+load_reqs <- function(reqs) {
+  for(pkg in reqs) {
+    if (!(pkg %in% installed.packages())) { install.packages(pkg)}
+    suppressPackageStartupMessages(library(pkg, character.only = T))
+  }
+}
+load_reqs(c("tufte", "knitr", "data.table", "ggplot2", "readxl", "plotly", "scales", "reshape2", "waffle", "tidyr", "ggalt", "ggthemes", "plotly", "grid", "gridExtra", "RColorBrewer", "gganimate", "gifski", "ggExtra"))
+```
+<p class="intro">The following data visualizations reflect information contained in the “Formula E Results” dataset from FIA Formula E, an electric-car auto racing championship. Data pertains to race results from 2014-2016, as well as pilot, circuit, and race characteristics. The set includes nineteen (19) columns and 2,509 rows of information. The data collected is used to track racer performance, as well as to identify circuit competitiveness, trends in speed, and to yield other insights which can help to optimize team and circuit formation. 
+<br><br>
+This report contains the following visualizations: Waffle Charts, Boxplot, Dumbbell, Density Chart, Scatterplots, and Small multiples.
+</p>
+
+```{r echo=FALSE, warning=FALSE}
+setwd("/Users/tommy/git/IE/TERMII/Data Visualization/R proj/")
+
+data <- data.table(read_xlsx("Formula E results.xlsx"))
+
+bad <-
+  c(
+  "Audi Sport Abt Formula E Team"    ,
+  "Andretti Autosport Formula E Team",
+  "Andretti Formula E Team",
+  "Ds Virgin Racing" ,
+  'Virgin Racing Formula E Team',
+  "Renault E.Dams" ,
+  "Venturi Formula E Team"          ,
+  "Team Aguri"     ,
+  'Dragon Racing Formula E Team',
+  "Nextev Tcr Formula E Team"      ,
+  "China Racing Formula E Team",
+  "Mahindra Racing Formula E Team"
+  )
+  good <-
+  c(
+  "Abt Schaeffler Audi Sport"       ,
+  "Andretti Formula E"       ,
+  "Andretti Formula E" ,
+  "Ds Virgin Racing Formula E Team" ,
+  "Ds Virgin Racing Formula E Team",
+  "Team E.Dams Renault",
+  "Venturi Formula E",
+  'Amlin Aguri',
+  'Faraday Future Dragon Racing',
+  "Nextev Nio",
+  "Nextev Nio",
+  "Mahindra Racing"
+  )
+FEt <- data$Team
+for (ite in 1:length(bad)) {
+  z = 0
+  while (is.na(z) == F) {
+  z <- match(bad[ite], FEt)
+    if (is.na(z) == F) {
+    FEt <- replace(FEt , z , good[ite])
+    FEt[z]
+    }
+  }
+}
+  
+data$Team <- FEt
+```
+
+<div class="sec">
+<div class="desc">
+## Did it ever occur to you how many drivers do <span class="red">not finish</span> the race?
+<br>
+<p>
+Some drivers may not finish the race because of following reasons:
+<ul>
+<li>Mechanical failure</li>
+<li>Car accident</li>
+<li>Suspension from race</li>
+</ul>
+</p>
+<p class="legend">1 Square = 1 Driver/Circuits</p>
+</div>
+```{r echo=FALSE, warning=FALSE}
+FE <- data
+NotFinish <- rep(0, length(FE$Position))
+for(i in 1:length(FE$Position)) {
+  if (FE$Position[i] == 'NULL') {
+  NotFinish[i] <- 1
+  }
+}
+FE$NotFinish <- NotFinish
+
+R_N_Finishes14 <- sum(FE[Season == 2014 & `Results type` == 'Race Results']$NotFinish)
+R_Finishes14<- length(FE[Season == 2014 & `Results type` == 'Race Results']$NotFinish) - sum(FE[Season == 2014 & `Results type` == 'Race Results']$NotFinish)
+
+
+Q_N_Finishes14 <- sum(FE[Season == 2014 & `Results type` == 'Race Results']$NotFinish)
+Q_Finishes14<- length(FE[Season == 2014 & `Results type` == 'Race Results']$NotFinish) - sum(FE[Season == 2014 & `Results type` == 'Race Results']$NotFinish)
+Race14  <- waffle(
+  c("Didn't Finish" = Q_N_Finishes14, Finished = Q_Finishes14) ,
+  rows = 5,
+  size = 0.3,
+  colors = c("red", "#54D0ED"),
+  title = "Race Finishes 2014",
+  legend_pos = "bottom"
+  )
+  
+Q_N_Finishes15 <- sum(FE[Season == 2015 & `Results type` == 'Race Results']$NotFinish)
+Q_Finishes15<- length(FE[Season == 2015 & `Results type` == 'Race Results']$NotFinish) - sum(FE[Season == 2015 & `Results type` == 'Race Results']$NotFinish)
+Race15 <- waffle(
+  c("Didn't Finish" = Q_N_Finishes15, Finishe = Q_Finishes15) ,
+  rows = 5,
+  size = 0.3,
+  colors = c("red", "#54D0ED"),
+  title = "Race Finishes 2015",
+  legend_pos = "bottom"
+  ) 
+
+Q_N_Finishes16 <- sum(FE[Season == 2016 & `Results type` == 'Race Results']$NotFinish)
+Q_Finishes16<- length(FE[Season == 2016 & `Results type` == 'Race Results']$NotFinish) - sum(FE[Season == 2016 & `Results type` == 'Race Results']$NotFinish)
+Race16 <- waffle(
+  c("Didn't Finish" = Q_N_Finishes16, Finished = Q_Finishes16) ,
+  rows = 5,
+  size = 0.3,
+  colors = c("red", "#54D0ED"),
+  title = "Race Finishes 2016",
+  legend_pos = "bottom"
+  )
+iron(Race14 , Race15, Race16)
+```
+</div>
+
+
+<hr>
+<div class="sec">
+<div class="desc">
+## Who have been the dominant teams and drivers over the past three years?
+<p class="legend">1 square = 1 win/Circuits</p>
+</div>
+
+```{r echo=FALSE, fig.height=4, warning=FALSE}
+data3<- data[Position == 1]
+
+#Print winning teams
+
+team.winners <- nrow(data3[['Team']])
+
+team.winners <- c(`Renault E.Dams` = 11, `Abt Schaeffler Audi Sport` = 5, `Team E.Dams Renault`= 4, `China Racing Formula E Team`=2,
+                   `Dragon Racing Formula E Team`=2, `Ds Virgin Racing`=2, `Virgin Racing Formula E Team`=2, `Amlin Aguri`=1,
+                   `Audi Sport Abt Formula E Team`=1, `Ds Virgin Racing Formula E Team`=1, `Mahindra Racing`=1, `Techeetah`=1)
+
+
+t3team.winners <- c(`Renault E.Dams` = 11, `Abt Schaeffler Audi Sport` = 5, `Team E.Dams Renault`= 4)
+
+A <- waffle(t3team.winners ,rows=2, size=1, 
+       colors=c('#747475','#21bbb1','#fc4c02'),
+       title = "Top 3 Team Winners (2014-2016)")
+
+#Print winning Pilots
+pilot.winners <- nrow(data3[['Pilot']])
+t3pilot.winners <- c(`S. Buemi`=12, `L. Di Grassi`=6, `S. Bird`=5)
+  
+B <- waffle(t3pilot.winners ,rows=2, size=1, 
+            colors=c('#747475','#21bbb1','#fc4c02'),
+            title = "Top 3 Pilot Winners (2014-2016)",
+            xlab = "1 square = 1 win")
+iron(A,B)
+```
+</div>
+
+
+<hr>
+<div class="sec">
+<div class="desc abs">
+## Not all circuits are equally competitive! <br><br> Which one is the <span class="red">least competitive</span>?
+
+<p>Beijing is the least competitive circuit as it has the widest spread, which is equivalent to saying that drivers performed differently during the race. Whereas, Miami has a very narrow spread, which means that drivers were close to each other.
+</p>
+</div>
+```{r echo=FALSE, fig.width=10,fig.height=6, warning=FALSE}
+FE<-data
+ToTime <- function (k) {
+  z <- as.numeric(substring(k , 1, 1)) * 60 + as.numeric(substring(k, 3))
+  z
+}
+FE$BestTimeSec <- as.vector(sapply(FE$`Best Time`, ToTime))
+
+
+ggplot(FE, aes(factor(FE$City), FE$BestTimeSec)) +
+  theme_tufte(base_size = , ticks = T) +
+  geom_tufteboxplot(outlier.colour = "transparent",
+  size = 1,
+  color = "#0C273D") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  annotate(
+  "text",
+  x = 25,
+  y = 20,
+  adj = 1,
+  family = "serif",
+  label = c("")
+  ) +
+  labs(x = 'Circuits' , y = 'Best Time in Sec')
+```
+</div>
+<br><br>
+
+## Miami in Depth 
+
+<br><br>
+<div class="sec">
+<div class="desc">
+## <span style="color:darkgreen">Highst Rank</span> vs. <span style="color:red">Lowest Rank</span> by team
+</div>
+```{r echo=FALSE, warning=FALSE}
+dumbbell <- data[`Results type` == 'Race Results', c('Season', 'Rank', 'Team')]
+dumbbell <- dumbbell[, .(high_rank=min(Rank), low_rank=max(Rank)), by=list(Season, Team)]
+
+## Transform the table from long to wide
+
+dumbbell_transposed <- as.data.table(reshape(dumbbell, direction = 'wide', timevar = 'Season', idvar = c('Team'), sep = '_'))
+
+## Create three tables for each season in order to plot the dumbbel chart
+
+dt_2014 <- dumbbell_transposed[complete.cases(dumbbell_transposed$high_rank_2014), c(1,2,3)]
+dt_2015 <- dumbbell_transposed[complete.cases(dumbbell_transposed$high_rank_2015), c(1,4,5)]
+dt_2016 <- dumbbell_transposed[complete.cases(dumbbell_transposed$high_rank_2016), c(1,6,7)]
+
+# ggplot(dt_2014, aes(x=dt_2014$'high_rank_2014', xend=dt_2014$'low_rank_2014', y=Team, group=Team)) + 
+#         geom_dumbbell(colour="#54D0ED", size=0.5, colour_xend="red", size_xend = 3, 
+#                       dot_guide=TRUE, dot_guide_size=0.5, dot_guide_colour = "grey") + 
+#         scale_x_continuous() +  
+#         labs(x=NULL, y=NULL) +
+#         ggtitle("Season 2014: Variance of Team Rankings in Race Results")
+# 
+# ggplot(dt_2015, aes(x=dt_2015$'high_rank_2015', xend=dt_2015$'low_rank_2015', y=Team, group=Team)) + 
+#         geom_dumbbell(colour="#54D0ED", size=0.5, colour_xend="red", size_xend = 3, 
+#                       dot_guide=TRUE, dot_guide_size=0.5, dot_guide_colour = "grey") + 
+#         scale_x_continuous() +  
+#         labs(x=NULL, y=NULL) +
+#         ggtitle("Season 2015: Variance of in Team Rankings in Race Results")
+# 
+# ggplot(dt_2016, aes(x=dt_2016$'high_rank_2016', xend=dt_2016$'low_rank_2016', y=Team, group=Team)) + 
+#         geom_dumbbell(colour="#54D0ED", size=0.5, colour_xend="red", size_xend = 3, 
+#                       dot_guide=TRUE, dot_guide_size=0.5, dot_guide_colour = "grey") + 
+#         scale_x_continuous() +  
+#         labs(x=NULL, y=NULL) +
+#         ggtitle("Season 2016: Variance of Team Rankings in Race Results")
+
+
+circuit <- data[`Results type` == 'Race Results', c('City', 'Rank', 'Team')]
+
+circuit <- circuit[, .(high_rank=min(Rank), low_rank=max(Rank)), by=list(City, Team)]
+
+## Plot the dumbbell chart by circuit (select two or three circuits that are more representative). In this case, i selected four circuits (Miami, Moscow, Hong Kong, Marrakesh) which appear to be more competitive 
+
+miami <- circuit[circuit$City == 'MIAMI', ]
+hk <- circuit[circuit$City == 'HONG KONG', ]
+moscow <- circuit[circuit$City == 'MOSCOW', ]
+marrakesh <- circuit[circuit$City == 'MARRAKESH', ]
+miami$Team <- factor(miami$Team, levels=miami[order(miami$high_rank,decreasing=T),]$Team)
+ggplot(miami,
+       aes(
+       x = miami$'high_rank',
+       xend = miami$'low_rank',
+       y = Team,
+       group = Team
+       )) +
+       geom_dumbbell(
+       colour = "grey",
+       size = 0.6,
+       colour_xend = "red",
+       size_xend = 3,
+       size_x = 3,
+       colour_x = "darkgreen",
+       dot_guide = TRUE,
+       dot_guide_size = 0.1,
+       dot_guide_colour = NULL
+       ) +
+       scale_x_continuous() +
+       labs(x = NULL, y = NULL) +
+       theme_tufte()
+```
+</div>
+<hr>
+<div class="sec">
+<div class="desc">
+## Does the maximum speed increase in Races ?
+</div>
+```{r, echo=FALSE, warning=FALSE}
+Bp <- data
+Bp$Speed<- as.numeric(Bp$Speed)
+
+Bp <- Bp[`Results type` != "Super Pole Results"]
+
+ggplot(Bp, aes(`Results type`,Speed)) + 
+  theme_tufte(base_size = 7, ticks=F) +
+  geom_tufteboxplot(outlier.colour="transparent", color= "#990000") + 
+  theme(axis.title=element_blank()) +
+  coord_flip() 
+```
+</div>
+
+<hr>
+<div class="sec">
+<div class="desc">
+## Position in <span style="color:orange">Qualifications</span> vs. <span style="color:darkgreen">Race</span> (by pilot)  
+</div>
+```{r echo=FALSE, fig.width=7,fig.height=7, warning=FALSE}
+FE<-data
+setkey(FE, Pilot)
+
+test<-as.data.table(as.data.frame(FE[, mean(Rank, na.rm = TRUE),by =list(Pilot,`Results type`)]))
+t<-dcast(test, Pilot  ~ `Results type`)
+t$`Super Pole Results`<-NULL
+t<- t[ order(t[['Race Results']]),]
+t$Pilot <- factor(t$Pilot, levels=t[order(t[['Race Results']],decreasing=T),]$Pilot)
+g <- ggplot(
+      na.omit(t),
+      aes(
+        x = `Qualification Results`,
+        xend = `Race Results`,
+        y = Pilot,
+        group = Pilot
+      )) +
+      geom_dumbbell(
+      colour = "grey",
+      size = 0.6,
+      colour_xend = "orange",
+      size_xend = 3,
+      size_x = 3,
+      colour_x = "darkblue",
+      dot_guide = TRUE,
+      dot_guide_size = 0.1,
+      dot_guide_colour = NULL
+      ) +
+      labs(x = 'Position', y = NULL) +
+      theme_tufte()
+
+g
+```
+</div>
+
+<hr>
+<div class="sec">
+<div class="desc">
+## Speed in <span style="color:darkgreen">Practice</span> vs. <span style="color:red">Race</span> (by pilot)  <br> <br> Do you think drivers pace more in Race compared to practice?
+<p>Fact: Drivers are faster during practice because there are no competitors and they do not need to be concerned about low fuel and burning tires</p>
+</div>
+
+```{r echo=FALSE, fig.width=7,fig.height=7, warning=FALSE}
+wf <- data
+wf$Speed<-as.numeric(wf$Speed)
+
+setkey(wf, Pilot)
+
+test<-as.data.table(wf[,mean(Speed, na.rm = TRUE),by =list(`Pilot`,`Results type`)])
+speed_pilot<-dcast(test, Pilot  ~ `Results type`)
+
+
+cols <- c("Pilot","Practice_1","Practice_2","Qualification_Results","Race_Results","Super_Pole_Results")
+colnames(speed_pilot) <- cols
+speed_pilot$Pilot <- factor(speed_pilot$Pilot, levels=speed_pilot[order(speed_pilot[['Race_Results']],decreasing=T),]$Pilot)
+ggplot(speed_pilot,
+       aes(
+       x = Practice_1,
+       xend = Race_Results,
+       y = Pilot,
+       group = Pilot
+       )) +
+       geom_dumbbell(
+       colour = "grey",
+       size = 0.6,
+       colour_xend = "red",
+       size_xend = 3,
+       size_x = 3,
+       colour_x = "darkgreen",
+       dot_guide = TRUE,
+       dot_guide_size = 0.1,
+       dot_guide_colour = NULL
+       ) +
+       labs(x = NULL, y = NULL) +
+       theme_tufte() 
+```
+
+</div>
+
+<hr>
+<div class="sec">
+<div class="desc">
+## Team participation over time
+<p>Team Abt. Schaeffler Audi sport has clearly participated in more races relative to Virgin Racing Formula E team</p>
+</div>
+```{r echo=FALSE, fig.width=7,fig.height=4, warning=FALSE}
+
+ggplot(data, aes(Team)) +
+  geom_density(aes(fill=Team), alpha=0.4, color='transparent') +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  theme_tufte(base_size = 5, ticks=FALSE) +
+  labs(color="Position") +
+  theme_void() + theme(legend.position="right")
+```
+
+</div>
+
+<hr>
+<div class="sec">
+<div class="desc">
+## How has each time ranked over time ?
+</div>
+
+```{r pressure, echo=FALSE, warning=FALSE}
+data2<-as.data.table(data)
+
+setkey(data2, Team)
+
+data4<-as.data.table(data2[, mean(Rank, na.rm = TRUE),by =list(`Team`,`Date`,`Season`,`City`)])
+data4$Date<- as.Date(data4$Date, format = "%m/%d/%Y")
+
+ggplot(data4, aes(x=Date, y=-V1, color=Season, show.legend = FALSE)) + 
+  #geom_point(size=0.5 , alpha=0.9) +
+  geom_line()+
+  facet_wrap(Season ~ Team) +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        axis.title = element_blank(), 
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        strip.text = element_text(size=5),
+        strip.text.x = element_text(margin = margin(0.1,0,0.1,0, "cm"))) +
+  theme(strip.background =element_rect(fill="white"))+
+  theme(strip.text = element_text(colour = 'black'))+
+  guides(fill=FALSE, color=FALSE) + 
+  scale_fill_discrete(guide=FALSE)
+```
+
+
+</div>
+
+<hr>
+<div class="sec">
+<div class="desc">
+## How fast does pilots drive in different circuits ?
+<p>The graph shows inverse relationship between average speed and best time in a circuit. As average speed increases, best time in a circuit reduces.</p>
+</div>
+
+
+```{r echo=FALSE, warning=FALSE}
+ToTime <- function (k){
+  z<-as.numeric(substring(k , 1,1))*60+as.numeric(substring(k,3))
+  z
+}
+# Apply the function to create a column of seconds (as integer) in the data set
+data$BestTimeSec<-as.vector(sapply(data$`Best Time`,ToTime))
+# histogram-scatterplot
+hs <- ggplot(data, aes(x=as.integer(data$Speed), y=-BestTimeSec, color=City)) + 
+  geom_point(size=0.5, alpha=0.5) + 
+  theme_tufte(base_size = 5, ticks=F) + 
+  theme(axis.title=element_blank(), axis.text=element_blank()) +
+  guides(fill=FALSE, color=FALSE) + 
+  scale_fill_discrete(guide=FALSE) +
+  theme(color = NULL) 
+ggMarginal(hs, type = "density", size=20, fill="lightgrey")
+```
+</div>
+
+<br><br><br><br><br><br>
+
+<center>
+## Created by Workgroup O-1-5
+## Data Viz Class
+## MBD-18
+</center>
+<br><br><br><br><br><br>

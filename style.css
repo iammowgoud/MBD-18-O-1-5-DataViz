@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css?family=Faster+One|Oswald');
+
+body {
+  text-align: center;
+  font-family: 'Oswald',
+  sans-serif;
+}
+
+hr {
+  border-top: 5px solid #e0dbdb;
+  border-radius: 0px;
+  margin-top: 145px;
+  box-shadow: none;
+}
+
+h1 {
+  font-family: 'Faster One',
+  cursive;
+  color: #54D0ED;
+  font-size: 60px;
+}
+
+h1,h2,h3,h4 {
+  color: #0C273D;
+}
+
+.inline {
+  display: inline;
+  max-width: 20%;
+  margin-bottom: 14px;
+}
+
+.sec {
+  margin-top: 110px;
+}
+
+pre {
+  display:none;
+}
+
+.desc {
+  max-width: 220px;
+  margin-top: 35px;
+  float: right;
+  color: #0C273D;
+  font-size: 32px;
+  text-align: left;
+}
+
+.desc.abs {
+  position: absolute;
+  left: 900px;
+}
+
+.desc h2 {
+  text-align: center;
+
+  font-weight: bold;
+  font-size: 27px;
+}
+
+.desc, .desc p {
+  color: #0C273D;
+  font-size: 20px;
+}
+
+.desc p {
+  padding-left: 15px;
+  margin-top: 10px;
+}
+
+.desc p.legend {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 18px;
+
+  color: #959393;
+}
+
+.intro {
+    max-width: 600px;
+    text-align: justify;
+    margin: 80px auto;
+    font-size: 20px;
+}
+
+.red {
+  color: red;
+}
+
+.cyan {
+  color: #54D0ED;
+}
